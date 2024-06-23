@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Student Performance Analyzer</h1>
+    </header>
+    
+    <main>
+        <section id="upload-section">
+            <h2>Upload Marks Excel Sheet</h2>
+            <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
+                <input type="file" name="file" id="file-input" accept=".xlsx">
+                <button type="submit">Upload</button>
+            </form>
+        </section>
+        
+        <section id="filter-section">
+            <h2>Filters</h2>
+            <form id="filter-form">
+                <label for="roll-number">Roll Number:</label>
+                <input type="text" id="roll-number" name="roll-number">
+        
+                <label for="grade">Grade:</label>
+                <input type="text" id="grade" name="grade">
+        
+                <label for="avg">Average Marks:</label>
+                <input type="number" id="avg" name="avg">
+        
+                <button type="submit">Apply Filters</button>
+            </form>
+        </section>
+        
+        <section id="overall-performance-section">
+            <h2>Overall Performance</h2>
+            <div id="overall-performance"></div>
+            <canvas id="overallPerformanceChart"></canvas>
+            <button id="fetch-overall-performance">Show Overall Performance</button>
+        </section>
+        
+        <section id="chart-section">
+            <h2>Performance Chart</h2>
+            <canvas id="performanceChart"></canvas>
+            <p id="no-data-message" style="display: none;">No data found for the given filters</p>
+        </section>
+        
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+let overallPerformanceChart;
+
+document.getElementById('fetch-overall-performance').addEventListener('click', async function() {
+    try {
+        const response = await fetch('/overall-performance');
+        const overallPerformance = await response.json();
+
+        // Combine similar grade labels (e.g., "A" and "A ")
+        const cleanedGradesCount = {};
+        for (const [grade, count] of Object.entries(overallPerformance.gradesCount)) {
+            const cleanedGrade = grade.trim();
+            if (cleanedGradesCount[cleanedGrade]) {
+                cleanedGradesCount[cleanedGrade] += count;
+            } else {
+                cleanedGradesCount[cleanedGrade] = count;
+            }
+        }
+
+        const gradeLabels = Object.keys(cleanedGradesCount);
+        const gradeCounts = Object.values(cleanedGradesCount);
+        const avgMarksLabels = ['Average M1 Marks', 'Average M2 Marks'];
+        const avgMarks = [overallPerformance.avgM1, overallPerformance.avgM2];
+
+        const overallPerformanceChartCanvas = document.getElementById('overallPerformanceChart').getContext('2d');
+
+        if (overallPerformanceChart) {
+            overallPerformanceChart.destroy();
+        }
+
+        overallPerformanceChart = new Chart(overallPerformanceChartCanvas, {
+            type: 'bar',
+            data: {
+                labels: [...avgMarksLabels, ...gradeLabels],
+                datasets: [
+                    {
+                        label: 'Average Marks',
+                        data: [...avgMarks, ...new Array(gradeLabels.length).fill(null)],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            ...gradeLabels.map(() => 'rgba(0, 0, 0, 0)')  // Transparent background for grades
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            ...gradeLabels.map(() => 'rgba(0, 0, 0, 0)')  // Transparent border for grades
+                        ],
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Grades Count',
+                        data: [...new Array(avgMarksLabels.length).fill(null), ...gradeCounts],
+                        backgroundColor: gradeLabels.map(() => 'rgba(75, 192, 192, 0.2)'),
+                        borderColor: gradeLabels.map(() => 'rgba(75, 192, 192, 1)'),
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const overallPerformanceDiv = document.getElementById('overall-performance');
+        overallPerformanceDiv.innerHTML = `
+            <div>Total Students: ${overallPerformance.totalStudents}</div>
+            <div>Average M1 Marks: ${overallPerformance.avgM1}</div>
+            <div>Average M2 Marks: ${overallPerformance.avgM2}</div>
+            <div>Grades Count:</div>
+            <ul>
+                ${Object.entries(cleanedGradesCount).map(([grade, count]) => `<li>${grade}: ${count}</li>`).join('')}
+            </ul>
+        `;
+        overallPerformanceDiv.style.display = 'block';
+    } catch (error) {
+        console.error('Error fetching overall performance data:', error);
+        alert('Error fetching overall performance data');
+    }
+});
+
+
+
+    let performanceChart;
+    document.getElementById('filter-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const rollNumber = document.getElementById('roll-number').value.trim();
+    const grade = document.getElementById('grade').value.trim();
+    const avg = document.getElementById('avg').value.trim();
+
+    let query = '';
+    if (rollNumber) query += `rollNumber=${rollNumber}&`;
+    if (grade) query += `grade=${grade}&`;
+    if (avg) query += `avg=${avg}&`;
+
+    try {
+        const response = await fetch(`/students?${query.slice(0, -1)}`);
+        let students = await response.json();
+
+        // Filter out duplicates based on rollnumber
+        const uniqueStudents = [];
+        const uniqueRollNumbers = new Set();
+
+        students.forEach(student => {
+            if (!uniqueRollNumbers.has(student.rollnumber)) {
+                uniqueRollNumbers.add(student.rollnumber);
+                uniqueStudents.push(student);
+            }
+        });
+
+        const noDataMessage = document.getElementById('no-data-message');
+        const performanceChartCanvas = document.getElementById('performanceChart').getContext('2d');
+
+        if (uniqueStudents.length === 0) {
+            noDataMessage.style.display = 'block';
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            return;
+        } else {
+            noDataMessage.style.display = 'none';
+        }
+
+        const labels = uniqueStudents.map(student => student.rollnumber);
+        const m1Data = uniqueStudents.map(student => student.m1);
+        const m2Data = uniqueStudents.map(student => student.m2);
+
+        if (performanceChart) {
+            performanceChart.destroy();
+        }
+
+        performanceChart = new Chart(performanceChartCanvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'M1 Marks',
+                    data: m1Data,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'M2 Marks',
+                    data: m2Data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        alert('Error fetching data');
+    }
+});
+
+</script>
+    
+</body>
+</html>
