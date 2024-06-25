@@ -32,9 +32,16 @@
                 <label for="avg">Average Marks:</label>
                 <input type="number" id="avg" name="avg">
         
+                <label for="percentage-threshold">Select Percentage Threshold:</label>
+                <input type="number" id="percentage-threshold" name="percentage-threshold" min="0" max="100" step="1">
+                
+                <label for="fail">Fail Students:</label>
+                <input type="checkbox" id="fail" name="fail">
+
                 <button type="submit">Apply Filters</button>
             </form>
         </section>
+        
         
         <section id="overall-performance-section">
             <h2>Overall Performance</h2>
@@ -146,11 +153,15 @@ document.getElementById('fetch-overall-performance').addEventListener('click', a
     const rollNumber = document.getElementById('roll-number').value.trim();
     const grade = document.getElementById('grade').value.trim();
     const avg = document.getElementById('avg').value.trim();
+    const percentageThreshold = document.getElementById('percentage-threshold').value.trim();
+    const fail = document.getElementById('fail').checked;
 
     let query = '';
     if (rollNumber) query += `rollNumber=${rollNumber}&`;
     if (grade) query += `grade=${grade}&`;
     if (avg) query += `avg=${avg}&`;
+    if (percentageThreshold) query += `percentageThreshold=${percentageThreshold}&`;
+    if (fail) query += `fail=true&`;
 
     try {
         const response = await fetch(`/students?${query.slice(0, -1)}`);
@@ -215,6 +226,8 @@ document.getElementById('fetch-overall-performance').addEventListener('click', a
         alert('Error fetching data');
     }
 });
+
+
 
 </script>
     

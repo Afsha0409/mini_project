@@ -44,7 +44,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
 // Route to fetch student data based on filters
 app.get('/students', async (req, res) => {
-    const { rollNumber, grade, avg } = req.query;
+    const { rollNumber, grade, avg ,percentageThreshold,fail} = req.query;
 
     try {
         const query = {};
@@ -56,6 +56,12 @@ app.get('/students', async (req, res) => {
         }
         if (avg) {
             query.avg = Number(avg); // Ensure avg is a number
+        }
+        if (fail) {
+            query.TotalGP = { $lt: 5.0 }; // Assuming fail is defined as gp < 5.0
+        } 
+        if (percentageThreshold) {
+            query.TotalGP = { $gte: Number(percentageThreshold) / 10 }; // Convert percentage to GPA
         }
 
         // Using aggregation to get unique records

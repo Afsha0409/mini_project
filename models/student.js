@@ -32,15 +32,15 @@ const studentSchema = new mongoose.Schema({
         required: true
     },
 
-    // TotalCredits: {
-    //     type: Number,
-    //     required: true
-    // },
+    TotalCredits: {
+        type: Number,
+        required: true
+    },
 
-    // TotalGrades: {
-    //     type: Number,
-    //     required: true
-    // },
+    TotalGrade: {
+        type: Number,
+        required: true
+    },
 
     TotalGP: {
         type: Number,
