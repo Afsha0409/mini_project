@@ -49,7 +49,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-
 app.get('/students', async (req, res) => {
     const { rollNumber, grade, avg ,percentageThreshold,fail} = req.query;
 
@@ -93,9 +92,6 @@ app.get('/students', async (req, res) => {
         res.status(500).send('Error fetching data');
     }
 });
-
-
-
 
 // Route to fetch overall performance data
 app.get('/overall-performance', async (req, res) => {
