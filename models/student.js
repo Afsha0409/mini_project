@@ -9,48 +9,66 @@ const studentSchema = new mongoose.Schema({
     },
     m1: {
         type: Number,
-        required: true
+        // required: true
     },
     m2: {
         type: Number,
-        required: true
+        // required: true
     },
     avg: {
         type: Number,
-        required: true
+        // required: true
     },
     credits: {
         type: Number,
-        required: true
+        // required: true
     },
     grade: {
         type: String,
-        required: true
+        // required: true
     },
     gp: {
         type: Number,
-        required: true
+        // required: true
     },
 
     TotalCredits: {
         type: Number,
-        required: true
+        // required: true
     },
 
     TotalGrade: {
         type: Number,
-        required: true
+        // required: true
     },
 
     TotalGP: {
         type: Number,
-        required: true
+        // required: true
     },
 
     Total: {
         type: Number,
-        required: true
+        // required: true
     },
+    coa:{
+        type: Number,
+    },
+
+    os:{
+        type: Number,
+    },
+
+    java:{
+        type: Number,
+    },
+    se:{
+        type: Number,
+    },
+    uploadId: {
+         type: String, required: true 
+    }
+    
 });
 
 const Student = mongoose.model('Student', studentSchema);

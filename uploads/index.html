@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,9 +14,9 @@
     
     <main>
         <section id="upload-section">
-            <h2>Upload Marks Excel Sheet</h2>
-            <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
-                <input type="file" name="file" id="file-input" accept=".xlsx">
+            <h2>Upload SEM Marks Excel Sheet</h2>
+            <form id="sem-upload-form" enctype="multipart/form-data" action="/upload" method="post">
+                <input type="file" name="file" id="sem-file-input" accept=".xlsx">
                 <button type="submit">Upload</button>
             </form>
         </section>
@@ -42,12 +43,12 @@
             </form>
         </section>
         
-        
         <section id="overall-performance-section">
             <h2>Overall Performance</h2>
             <div id="overall-performance"></div>
             <canvas id="overallPerformanceChart"></canvas>
-            <button id="fetch-overall-performance">Show Overall Performance</button>
+            <button id="fetch-overall-performance">Show SEMISTER Performance</button>
+            <button id="fetch-overall-mid-performance">Show MID Performance</button>
         </section>
         
         <section id="chart-section">
@@ -60,176 +61,204 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-let overallPerformanceChart;
+        document.addEventListener('DOMContentLoaded', function() {
+            let overallPerformanceChart;
+            let performanceChart;
 
-document.getElementById('fetch-overall-performance').addEventListener('click', async function() {
-    try {
-        const response = await fetch('/overall-performance');
-        const overallPerformance = await response.json();
-
-        // Combine similar grade labels (e.g., "A" and "A ")
-        const cleanedGradesCount = {};
-        for (const [grade, count] of Object.entries(overallPerformance.gradesCount)) {
-            const cleanedGrade = grade.trim();
-            if (cleanedGradesCount[cleanedGrade]) {
-                cleanedGradesCount[cleanedGrade] += count;
-            } else {
-                cleanedGradesCount[cleanedGrade] = count;
-            }
-        }
-
-        const gradeLabels = Object.keys(cleanedGradesCount);
-        const gradeCounts = Object.values(cleanedGradesCount);
-        const avgMarksLabels = ['Average M1 Marks', 'Average M2 Marks'];
-        const avgMarks = [overallPerformance.avgM1, overallPerformance.avgM2];
-
-        const overallPerformanceChartCanvas = document.getElementById('overallPerformanceChart').getContext('2d');
-
-        if (overallPerformanceChart) {
-            overallPerformanceChart.destroy();
-        }
-
-        overallPerformanceChart = new Chart(overallPerformanceChartCanvas, {
-            type: 'bar',
-            data: {
-                labels: [...avgMarksLabels, ...gradeLabels],
-                datasets: [
-                    {
-                        label: 'Average Marks',
-                        data: [...avgMarks, ...new Array(gradeLabels.length).fill(null)],
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.2)',
-                            'rgba(54, 162, 235, 0.2)',
-                            ...gradeLabels.map(() => 'rgba(0, 0, 0, 0)')  // Transparent background for grades
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            ...gradeLabels.map(() => 'rgba(0, 0, 0, 0)')  // Transparent border for grades
-                        ],
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Grades Count',
-                        data: [...new Array(avgMarksLabels.length).fill(null), ...gradeCounts],
-                        backgroundColor: gradeLabels.map(() => 'rgba(75, 192, 192, 0.2)'),
-                        borderColor: gradeLabels.map(() => 'rgba(75, 192, 192, 1)'),
-                        borderWidth: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        const overallPerformanceDiv = document.getElementById('overall-performance');
-        overallPerformanceDiv.innerHTML = `
-            <div>Total Students: ${overallPerformance.totalStudents}</div>
-            <div>Average M1 Marks: ${overallPerformance.avgM1}</div>
-            <div>Average M2 Marks: ${overallPerformance.avgM2}</div>
-            <div>Grades Count:</div>
-            <ul>
-                ${Object.entries(cleanedGradesCount).map(([grade, count]) => `<li>${grade}: ${count}</li>`).join('')}
-            </ul>
-        `;
-        overallPerformanceDiv.style.display = 'block';
-    } catch (error) {
-        console.error('Error fetching overall performance data:', error);
-        alert('Error fetching overall performance data');
-    }
-});
-
-
-
-    let performanceChart;
-    document.getElementById('filter-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const rollNumber = document.getElementById('roll-number').value.trim();
-    const grade = document.getElementById('grade').value.trim();
-    const avg = document.getElementById('avg').value.trim();
-    const percentageThreshold = document.getElementById('percentage-threshold').value.trim();
-    const fail = document.getElementById('fail').checked;
-
-    let query = '';
-    if (rollNumber) query += `rollNumber=${rollNumber}&`;
-    if (grade) query += `grade=${grade}&`;
-    if (avg) query += `avg=${avg}&`;
-    if (percentageThreshold) query += `percentageThreshold=${percentageThreshold}&`;
-    if (fail) query += `fail=true&`;
-
-    try {
-        const response = await fetch(`/students?${query.slice(0, -1)}`);
-        let students = await response.json();
-
-        // Filter out duplicates based on rollnumber
-        const uniqueStudents = [];
-        const uniqueRollNumbers = new Set();
-
-        students.forEach(student => {
-            if (!uniqueRollNumbers.has(student.rollnumber)) {
-                uniqueRollNumbers.add(student.rollnumber);
-                uniqueStudents.push(student);
-            }
-        });
-
-        const noDataMessage = document.getElementById('no-data-message');
-        const performanceChartCanvas = document.getElementById('performanceChart').getContext('2d');
-
-        if (uniqueStudents.length === 0) {
-            noDataMessage.style.display = 'block';
-            if (performanceChart) {
-                performanceChart.destroy();
-            }
-            return;
-        } else {
-            noDataMessage.style.display = 'none';
-        }
-
-        const labels = uniqueStudents.map(student => student.rollnumber);
-        const m1Data = uniqueStudents.map(student => student.m1);
-        const m2Data = uniqueStudents.map(student => student.m2);
-
-        if (performanceChart) {
-            performanceChart.destroy();
-        }
-
-        performanceChart = new Chart(performanceChartCanvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'M1 Marks',
-                    data: m1Data,
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }, {
-                    label: 'M2 Marks',
-                    data: m2Data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        alert('Error fetching data');
-    }
-});
-
-
-
-</script>
+            document.getElementById('sem-upload-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
     
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+    
+                    const result = await response.json();
+                    if (response.ok) {
+                        const { uploadId } = result;
+                        console.log('Upload successful. Upload ID:', uploadId);
+    
+                        // Store the uploadId for subsequent requests
+                        sessionStorage.setItem('uploadId', uploadId);
+                    } else {
+                        console.error('Error during file upload:', result);
+                    }
+                } catch (error) {
+                    console.error('Error during file upload:', error);
+                }
+            });
+
+            document.getElementById('fetch-overall-performance').addEventListener('click', async function() {
+                const uploadId = sessionStorage.getItem('uploadId');
+                if (!uploadId) {
+                    alert('No upload ID found. Please upload a file first.');
+                    return;
+                }
+    
+                try {
+                    const response = await fetch(`/overall-performance?uploadId=${uploadId}`);
+                    const overallPerformance = await response.json();
+    
+                    if (response.ok) {
+                        // Process and display the overall performance data
+                        displayOverallPerformance(overallPerformance);
+                    } else {
+                        console.error('Error fetching overall performance data:', overallPerformance);
+                    }
+                } catch (error) {
+                    console.error('Error fetching overall performance data:', error);
+                    alert('Error fetching overall performance data');
+                }
+            });
+    
+            function displayOverallPerformance(data) {
+                const overallPerformanceDiv = document.getElementById('overall-performance');
+                overallPerformanceDiv.innerHTML = `
+                    <div>Total Students: ${data.totalStudents}</div>
+                    <div>Average Internal Marks: ${data.avgInternal}</div>
+                    <div>Average External Marks: ${data.avgExternal}</div>
+                    <div>Grades Count:</div>
+                    <ul>
+                        ${Object.entries(data.gradesCount).map(([grade, count]) => `<li>${grade}: ${count}</li>`).join('')}
+                    </ul>
+                `;
+                overallPerformanceDiv.style.display = 'block';
+    
+                // Create or update the chart
+                const overallPerformanceChartCanvas = document.getElementById('overallPerformanceChart').getContext('2d');
+                if (overallPerformanceChart) {
+                    overallPerformanceChart.destroy();
+                }
+                overallPerformanceChart = new Chart(overallPerformanceChartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Average Internal Marks', 'Average External Marks', ...Object.keys(data.gradesCount)],
+                        datasets: [
+                            {
+                                label: 'Average Marks',
+                                data: [data.avgInternal, data.avgExternal, ...Object.values(data.gradesCount).map(() => null)],
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    ...Object.keys(data.gradesCount).map(() => 'rgba(0, 0, 0, 0)')
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    ...Object.keys(data.gradesCount).map(() => 'rgba(0, 0, 0, 0)')
+                                ],
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Grades Count',
+                                data: [null, null, ...Object.values(data.gradesCount)],
+                                backgroundColor: Object.keys(data.gradesCount).map(() => 'rgba(75, 192, 192, 0.2)'),
+                                borderColor: Object.keys(data.gradesCount).map(() => 'rgba(75, 192, 192, 1)'),
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+    
+            //mid marks performance
+            document.getElementById('fetch-overall-mid-performance').addEventListener('click', async function() {
+                const uploadId = sessionStorage.getItem('uploadId');
+                if (!uploadId) {
+                    alert('No upload ID found. Please upload a file first.');
+                    return;
+                }
+    
+                try {
+                    const response = await fetch(`/mid-performance?uploadId=${uploadId}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch MID performance data');
+                    }
+    
+                    const midPerformanceData = await response.json();
+                    displayMidPerformance(midPerformanceData);
+                } catch (error) {
+                    console.error('Error fetching MID performance data:', error);
+                    alert('Error fetching MID performance data. Please try again.');
+                }
+            });
+    
+            function displayMidPerformance(data) {
+                const midPerformanceDiv = document.getElementById('overall-performance');
+                if (!midPerformanceDiv) {
+                    console.error('Element with ID "overall-performance" not found.');
+                    return;
+                }
+    
+                midPerformanceDiv.innerHTML = `
+                    <h3>MID Performance</h3>
+                    <ul>
+                        ${data.map(student => `
+                            <li>${student.rollnumber}: COA ${student.coa}, OS ${student.os}, Java ${student.java}, SE ${student.se}</li>
+                        `).join('')}
+                    </ul>`;
+    
+                // Create or update the chart
+                const midPerformanceChartCanvas = document.getElementById('overallPerformanceChart').getContext('2d');
+                if (overallPerformanceChart) {
+                    overallPerformanceChart.destroy();
+                }
+                overallPerformanceChart = new Chart(midPerformanceChartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(student => student.rollnumber),
+                        datasets: [
+                            {
+                                label: 'COA',
+                                data: data.map(student => student.coa),
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'OS',
+                                data: data.map(student => student.os),
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Java',
+                                data: data.map(student => student.java),
+                                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                                borderColor: 'rgba(255, 206, 86, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'SE',
+                                data: data.map(student => student.se),
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
