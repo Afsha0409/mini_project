@@ -53,7 +53,7 @@ A web application that enables faculty to analyze student performance by uploadi
    The server will start on `http://localhost:5000`.
 
 ## Usage
-1. **Uploading Excel Sheets**: Log in as a faculty member and upload an Excel file with students' marks. Ensure the Excel sheet is properly formatted for correct processing.
+1. **Uploading Excel Sheets**: upload an Excel file with students' marks. Ensure the Excel sheet is properly formatted for correct processing.
 2. **Viewing Graphical Analysis**: After uploading, the app will process the data and display performance metrics in graphs, allowing for easy performance analysis.
 
 ## Troubleshooting
