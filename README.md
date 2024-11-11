@@ -60,6 +60,3 @@ A web application that enables faculty to analyze student performance by uploadi
 - **MongoDB Connection Issues**: Make sure the MongoDB URI is correct and that the IP address is whitelisted in MongoDB Atlas.
 - **Excel File Upload Issues**: Ensure the Excel sheet follows the required format for correct parsing.
 
----
-
-Let me know if you’d like additional customizations for the README!
