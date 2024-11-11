@@ -1,8 +1,4 @@
-Here’s a `README.md` tailored to your project, which allows faculty to analyze student performance by uploading an Excel sheet with student marks and viewing results as graphs.
-
----
-
-# Student Performance Analysis System
+# Student Performance Analysis 
 
 A web application that enables faculty to analyze student performance by uploading students' marks in an Excel sheet. The application stores data in MongoDB and provides visualizations, including graphs, for easier analysis.
 
